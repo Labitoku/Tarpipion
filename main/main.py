@@ -39,7 +39,52 @@ class Partition:
 
     def __init__(self, opendocument):
         self.gamme = Gamme()
+        self.partition = opendocument
+        self.lignes = []
+        self.line_identification()
 
+
+    def line_identification(self):
+        allText = self.partition.getElementsByType(text.P)
+        #teletype.extractText(allText[0])
+        for i in range(len(allText)):
+            #if(allText[i])
+            if self.noteline_identification(allText[i]):
+                print("Ligne de note à la ligne : " + str(i))
+
+            
+
+    def noteline_identification(self, ligne):
+        text = teletype.extractText(ligne)
+        
+        for i in range(len(text)):
+            if(len(text) > 5):
+                if(self.check_char_note(text[i])):
+                    if(text[i+1].lower() == 'm' or text[i+1] == ' ' or text[i+1] == '#' or text[i+1] == 'b'):
+                        return True
+
+#                    if(text[i+1] == ' '):
+ #                       if(text[i+2] == ' '):
+   #                         if(text[i+3] == ' '):
+    #                            return True
+
+        return False
+
+    def check_char_note(self, char):
+        if(char in gamme.notes):
+            return True
+
+    """def check_line_word(self, line):
+        if()
+"""
+"""    old_text = teletype.extractText(texts[i])
+    new_text = old_text.replace('something','something else')
+    new_S = text.P()
+    new_S.setAttribute("stylename",texts[i].getAttribute("stylename"))
+    new_S.addText(new_text)
+    texts[i].parentNode.insertBefore(new_S,texts[i])
+    texts[i].parentNode.removeChild(texts[i])
+"""
 
 
 
@@ -68,6 +113,11 @@ print(testdoc.text)
 
 
 if __name__ == '__main__':
+    """
     note = Note(sys.argv[1])
     gamme = Gamme()
-    print(gamme.switchNote(note, False, 3).note)
+    print(gamme.switchNote(note, False, 3).note)"""
+    gamme = Gamme()
+    testdoc = load("test/c_IdentificationDeLigne.odt")
+    partition = Partition(testdoc)
+
