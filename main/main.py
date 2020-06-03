@@ -30,8 +30,8 @@ class Gamme:
 
 class Note:
 
-    def __init__(self, valeur, tuning = ""):
-        self.note = valeur + tuning
+    def __init__(self, valeur):
+        self.note = valeur
 
 class NoteSet:
 
@@ -42,8 +42,12 @@ class NoteSet:
         
         for i in range(len(text)):
             if text[i] in self.gamme.notes:
-                tuning = text[i+1]
-                self.notes.append(Note(text[i], tuning if tuning == "b" or "#" else ""))
+                new_note = text[i]
+                if text[i + 1] == "b":
+                    new_note += "b"
+                elif text[i + 1] == "#":
+                    new_note += "#"
+                self.notes.append(Note(new_note))
 
     def show_noteset(self):
         noteset = "["
@@ -54,7 +58,14 @@ class NoteSet:
         noteset += "]"
         print(noteset)
 
-
+    def switchNotes(self, upping, qte):
+        for i in range(len(self.notes)):
+            self.notes[i] = self.gamme.switchNote(self.notes[i], upping, qte)
+"""    
+    note = Note(sys.argv[1])
+    gamme = Gamme()
+    print(gamme.switchNote(note, False, 3).note)
+"""
 
 class Partition:
 
@@ -98,14 +109,17 @@ class Partition:
                     return True
         return False
 
+    
     def check_char_note(self, char):
         if(char in self.gamme.notes):
             return True
 
+    #permet de stocker localement toutes les notes de la partition
     def set_notes(self):
         for i in range(len(self.lignes)):
             self.notes.append(NoteSet(self.allText[self.lignes[i]]))
             self.notes[i].show_noteset()
+
 
     #permet d'obtenir un index d'une note dans le tableau correspondant
     def get_char_index(self, char, bemol):
@@ -136,20 +150,6 @@ class Partition:
     texts[i].parentNode.removeChild(texts[i])
 """
 
-
-
-class Ligne:
-
-    def __init__(self, words):
-        i = 1
-
-
-
-class LigneGamme:
-    def __init__(self):
-        i = 1
-
-
 """#charger et afficher un texte
 testdoc = load("test/a_textTest.odt")
 print(testdoc.text)
@@ -166,7 +166,8 @@ if __name__ == '__main__':
     """
     note = Note(sys.argv[1])
     gamme = Gamme()
-    print(gamme.switchNote(note, False, 3).note)"""
+    print(gamme.switchNote(note, False, 3).note)
+    """
     gamme = Gamme()
     testdoc = load("test/c_IdentificationDeLigne.odt")
     partition = Partition(testdoc)
