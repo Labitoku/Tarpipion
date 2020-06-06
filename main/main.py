@@ -13,21 +13,23 @@ class Gamme:
         self.diese = "#"
 
 
-    def switchNote(self, note, upping, qte):
+    def switchNote(self, note, bemol, qte):
         new_note = Note(note.note)
-        if upping:
-            for i in range(len(self.notesDiese)):
-                if self.notesDiese[i] == new_note.note:
-                    new_note.note = self.notesDiese[(i + qte) % len(self.notesDiese)]            
-                    break
-        else:
+        if bemol:
             for i in range(len(self.notesBemol)):
                 if self.notesBemol[i] == new_note.note:
                     new_note.note = self.notesBemol[(i + qte) % len(self.notesBemol)]            
                     break
 
+        else:
+            for i in range(len(self.notesDiese)):
+                if self.notesDiese[i] == new_note.note:
+                    new_note.note = self.notesDiese[(i + qte) % len(self.notesDiese)]            
+                    break
+
         return new_note
 
+    
 
 class Note:
 
@@ -59,9 +61,15 @@ class NoteSet:
         noteset += "]"
         print(noteset)
 
-    def switch_notes(self, upping, qte):
+    def switch_notes(self, bemol, qte):
         for i in range(len(self.notes)):
-            self.notes[i] = self.gamme.switchNote(self.notes[i], upping, qte)
+            self.notes[i] = self.gamme.switchNote(self.notes[i], bemol, qte)
+
+    def is_bemol(self):
+        for i in range(len(self.notes)):
+            if self.notes[i].note.endswith("b"):
+                return True
+        return False
 
     def __getitem__(self, a):
         return self.notes[a]
@@ -74,14 +82,15 @@ class Partition:
         self.partition = opendocument
         self.allText = self.partition.getElementsByType(text.P)
         
-        self.bemol = False
-        
         self.lignes = []
         self.notes = []
         self.cpt = 0
         
+
         self.line_identification()
         self.set_notes()
+
+        self.bemol = self.set_bemol()
 
     #permet de repérer quelles lignes sont pour les notes desquelles sont pour les paroles
     def line_identification(self):
@@ -95,19 +104,19 @@ class Partition:
     #permet de détecter une ligne de notes  -> determine aussi si on est en diese ou en bemol
     def noteline_identification(self, ligne):
         text = teletype.extractText(ligne)
-        bemol_det = False
         for i in range(len(text)):
             if(self.check_char_note(text[i])):
-                if(text[i+1].lower() == "m" or text[i+1] == " " or text[i+1] == "#" or text[i+1] == "b"):
-                    if(text[i+1] == "b" and bemol_det == False):
-                        self.bemol = True
-                        bemol_det == True
-                    elif(text[i+1] == "#" and bemol_det == False):
-                        self.bemol = False
-                        bemol_det == True
+                if(text[i+1] == " " or text[i+1] == "#" or (text[i+1] == "b" and (text[i+2] == " " or text[i+2].lower == "m" or text[i+2] == "/"))):
                     return True
         return False
 
+    def set_bemol(self):
+        for i in range(len(self.lignes)):
+            if self.notes[i].is_bemol():
+                print("BEMOL")
+                return True
+        print("DIESE")
+        return False
 
     def check_char_note(self, char):
         if(char in self.gamme.notes):
@@ -129,21 +138,64 @@ class Partition:
     #permet d'obtenir un index d'une note dans le tableau correspondant
     def get_char_index(self, char):
         if(self.bemol):
-            for i in self.gamme.notesBemol:
+            for i in range(len(self.gamme.notesBemol)):
                 if gamme.notesBemol[i] == char:
+                    print("INDEX NOTE = " + str(i))
                     return i
         else:
-            for i in self.gamme.notesDiese:
+            for i in range(len(self.gamme.notesDiese)):
                 if gamme.notesDiese[i] == char:
+                    print("INDEX NOTE = " + str(i))
                     return i
 
 
     def switch_type(self):
-        if(self.bemol):
-            for i in range(len(self.lignes)):
-                j = 4         
 
-    def switch_notes(self, upping, qte):
+        
+
+        for i in range(len(self.lignes)):
+            old_text = teletype.extractText(self.allText[self.lignes[i]])
+            new_text = ""
+
+            new_notes = []
+
+            cpt = 0
+            
+            for j in range(len(self.notes[i].notes)):
+                ind = self.get_char_index(self.notes[i].notes[j].note)
+                if self.bemol:
+                    new_notes.append(self.gamme.notesDiese[ind])
+                else:
+                    new_notes.append(self.gamme.notesBemol[ind])      
+            
+            print("NOTES : " + str(new_notes))
+
+
+            for j in range(len(old_text) - 1):
+                if old_text[j] != " " and old_text[j] != "/" and (old_text[j] == self.notes[i].notes[cpt].note or (old_text[j] + old_text[j+1]) == self.notes[i].notes[cpt].note):
+                    print("NEW NOTE")
+                    new_text += new_notes[cpt]
+                    cpt += 1
+                    if(cpt == len(new_notes)):
+                        new_text += " "
+                        break
+                else:
+                    if(old_text[j] != "b" and old_text[j] != "#"):
+                        new_text += old_text[j]
+
+            print("OLD TEXT : " + old_text)
+            print("NEW TEXT : " + new_text)
+            
+            new_S = text.P()
+            new_S.setAttribute("stylename", self.allText[self.lignes[i]].getAttribute("stylename"))
+            new_S.addText(new_text)
+
+            self.allText[self.lignes[i]] = new_S
+            self.bemol = not self.bemol  
+            
+        self.reset_notes()
+
+    def switch_notes(self, qte):
 
         for i in range(len(self.lignes)):
             #print(self.allText[self.lignes[i]])
@@ -153,7 +205,7 @@ class Partition:
             new_notes = []
 
             for j in range(len(self.notes[i].notes)):
-                new_notes.append(self.gamme.switchNote(self.notes[i].notes[j], upping, qte).note)
+                new_notes.append(self.gamme.switchNote(self.notes[i].notes[j], self.bemol, qte).note)
 
 
             print("NOTESET")
@@ -216,7 +268,18 @@ if __name__ == '__main__':
     gamme = Gamme()
     testdoc = load("test/d_TranspoTest.odt")
     partition = Partition(testdoc)
-    partition.switch_notes(True, 3)
+    partition.switch_notes(3)
 
-    partition.switch_notes(True, 6)
+    partition.switch_type()
+    
+    print("\n\n\n")
+    for i in range(len(partition.allText)):
+        print(partition.allText[i])
+
+    partition.switch_type()
+    
+    print("\n\n\n")
+    for i in range(len(partition.allText)):
+        print(partition.allText[i])
+
    # partition.switch_notes(True, 0)
