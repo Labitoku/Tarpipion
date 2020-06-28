@@ -426,7 +426,7 @@ class TxtPartition:
 
 
     def switch_type(self):
-        for i, line in enumerate(self.lignes):
+        for i, line in enumerate(self.lignes): 
             old_text = self.all_text[line]
             new_text = ""
 
@@ -462,12 +462,8 @@ class TxtPartition:
             print("OLD TEXT : " + old_text)
             print("NEW TEXT : " + new_text)
 
-            #new_S = text.P()
-            #new_S.setAttribute("stylename", self.all_text[line].getAttribute("stylename"))
-            #new_S.addText(new_text)
-
             self.all_text[line] = new_text
-            self.bemol = not self.bemol
+        self.bemol = not self.bemol
 
         self.reset_notes()
 
@@ -512,11 +508,7 @@ class TxtPartition:
             new_s.addText(newer_text)
             self.all_text[line] = new_s
 
-#        print("\n\n\n")
- #       for i in range(len(self.all_text)):
-  #          print(self.all_text[i])
-
-        self.reset_notes()
+        #self.reset_notes()
 
     def save_test(self):
         
@@ -554,11 +546,6 @@ if __name__ == '__main__':
 
     txt_partition = TxtPartition("test/e_TxtTest.txt")
     txt_partition.switch_type()
-
-    print("\n\n\n\n\n\n")
-    print(txt_partition.all_text)
-    print("\n\n\n\n\n\n")
-
     txt_partition.save_test()
 
 """    gamme = Gamme()
