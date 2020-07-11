@@ -1,564 +1,264 @@
-from odf import text, teletype
-from odf.style import Style, TextProperties
-from odf.opendocument import load, OpenDocumentText
-from odf.text import Span
-
-
-class Gamme:
-    def __init__(self):
-        self.notes = ["C", "D", "E", "F", "G", "A", "B"]
-        self.notes_bemol = ["C", "Db", "D", "Eb", "E", "Fb", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
-        self.notes_diese = ["C", "D", "D#", "E", "E#", "F", "F#", "G", "G#", "A", "A#", "B", "B#"]
-        self.bemol = "b"
-        self.diese = "#"
-
-    def switch_note(self, note, bemol, qte):
-        new_note = Note(note.note)
-        if bemol:
-            for i, note_bemol in enumerate(self.notes_bemol):
-                if note_bemol == new_note.note:
-                    new_note.note = self.notes_bemol[(i + qte) % len(self.notes_bemol)]
-                    break
-
-        else:
-            for i, note_diese in enumerate(self.notes_diese):
-                if note_diese == new_note.note:
-                    new_note.note = self.notes_diese[(i + qte) % len(self.notes_diese)]
-                    break
-
-        return new_note
-
-
-class Note:
-    def __init__(self, valeur):
-        self.note = valeur
-
-
-class NoteSet:
-    def __init__(self, ligne):
-
-        self.notes = []
-        self.gamme = Gamme()
-        text = teletype.extractText(ligne)
-
-        for i, txt in enumerate(text):
-
-            if txt in self.gamme.notes:
-                new_note = txt
-
-                if text[i + 1] == "b":
-                    new_note += "b"
-
-                elif text[i + 1] == "#":
-                    new_note += "#"
-
-                self.notes.append(Note(new_note))
-
-    def show_noteset(self):
-        noteset = "Noteset : ["
-
-        for i, note in enumerate(self.notes):
-            noteset += note.note
-
-            if i != len(self.notes):
-                noteset += ", "
-
-        noteset += "]"
-        print(noteset)
-
-    def switch_notes(self, bemol, qte):
-        for note in self.notes:
-            note = self.gamme.switch_note(note, bemol, qte)
-
-    def is_bemol(self):
-        for note in self.notes:
-            if note.note.endswith("b"):
-                return True
-
-        return False
-
-    def __getitem__(self, a):
-        return self.notes[a]
-
-
-
-class TxtNoteSet:
-    def __init__(self, ligne):
-
-        self.notes = []
-        self.gamme = Gamme()
-        text = ligne
-
-        for i, txt in enumerate(text):
-
-            if txt in self.gamme.notes:
-                new_note = txt
-
-                if text[i + 1] == "b":
-                    new_note += "b"
-
-                elif text[i + 1] == "#":
-                    new_note += "#"
-
-                self.notes.append(Note(new_note))
-
-    def show_noteset(self):
-        noteset = " Noteset : ["
-
-        for i, note in enumerate(self.notes):
-            noteset += note.note
-
-            if i != len(self.notes):
-                noteset += ", "
-
-        noteset += "]"
-        print(noteset)
-
-    def switch_notes(self, bemol, qte):
-        for note in self.notes:
-            note = self.gamme.switch_note(note, bemol, qte)
-
-    def is_bemol(self):
-        for note in self.notes:
-            if note.note.endswith("b"):
-                return True
-
-        return False
-
-    def __getitem__(self, a):
-        return self.notes[a]
-
-class OdtPartition:
-    def __init__(self, opendocument):
-        self.gamme = Gamme()
-
-        self.partition = opendocument
-        self.all_text = self.partition.getElementsByType(text.P)
-
-        self.lignes = []
-        self.notes = []
-        self.cpt = 0
-
-        self.line_identification()
-        self.set_notes()
-
-        self.bemol = self.set_bemol()
-
-    # permet de repérer quelles lignes sont pour les notes desquelles sont pour les paroles
-    def line_identification(self):
-        #teletype.extractText(all_text[0])
-        for i, line in enumerate(self.all_text):
-            if self.noteline_identification(line):
-                self.lignes.append(i)
-                #print("Ligne de note à la ligne : " + str(self.lignes[self.cpt]))
-                self.cpt += 1
-
-    # permet de détecter une ligne de notes  -> determine aussi si on est en diese ou en bemol
-    def noteline_identification(self, ligne):
-        text = teletype.extractText(ligne)
-        for i, txt in enumerate(text):
-            if self.check_char_note(txt):
-                if(text[i+1] == " " or text[i+1] == "#" or (text[i+1] == "b" and (text[i+2] == " " or text[i+2].lower == "m" or text[i+2] == "/"))):
-                    return True
-        return False
-
-    def set_bemol(self):
-        for i, _ in enumerate(self.lignes):
-            if self.notes[i].is_bemol():
-                print("BEMOL")
-                return True
-
-        print("DIESE")
-        return False
-
-    def check_char_note(self, char):
-        if char in self.gamme.notes:
-            return True
-
-        return False
-
-    # permet de stocker localement toutes les notes de la partition
-    def set_notes(self):
-        for i, line in enumerate(self.lignes):
-            self.notes.append(NoteSet(self.all_text[line]))
-            self.notes[i].show_noteset()
-
-    def reset_notes(self):
-        self.notes.clear()
-        for i, line in enumerate(self.lignes):
-            self.notes.append(NoteSet(self.all_text[line]))
-            self.notes[i].show_noteset()
-
-        print("RESETING DONE !\n")
-
-    # permet d'obtenir un index d'une note dans le tableau correspondant
-    def get_char_index(self, char):
-        if self.bemol:
-            for i, note in enumerate(self.gamme.notes_bemol):
-                if note == char:
-                    print("INDEX NOTE = " + str(i))
-                    return i
-        else:
-            for i, note in enumerate(self.gamme.notes_diese):
-                if note == char:
-                    print("INDEX NOTE = " + str(i))
-                    return i
-
-        return -1
-
-
-    def switch_type(self):
-        for i, line in enumerate(self.lignes):
-            old_text = teletype.extractText(self.all_text[line])
-            new_text = ""
-
-            new_notes = []
-
-            cpt = 0
-
-            for j, note in enumerate(self.notes[i].notes):
-                ind = self.get_char_index(note.note)
-
-                if self.bemol:
-                    new_notes.append(self.gamme.notes_diese[ind])
-
-                else:
-                    new_notes.append(self.gamme.notes_bemol[ind])
-
-            print("NOTES : " + str(new_notes))
-
-            for j in range(len(old_text) - 1):
-                if (old_text[j] != " " and old_text[j] != "/" and (old_text[j] == self.notes[i].notes[cpt].note or (old_text[j] + old_text[j+1]) == self.notes[i].notes[cpt].note)):
-
-                    print("NEW NOTE")
-                    new_text += new_notes[cpt]
-                    cpt += 1
-
-                    if cpt == len(new_notes):
-                        new_text += " "
-                        break
-                else:
-                    if(old_text[j] != "b" and old_text[j] != "#"):
-                        new_text += old_text[j]
-
-            print("OLD TEXT : " + old_text)
-            print("NEW TEXT : " + new_text)
-
-            new_S = text.P()
-            new_S.setAttribute("stylename", self.all_text[line].getAttribute("stylename"))
-            new_S.addText(new_text)
-
-            self.all_text[line] = new_S
-            self.bemol = not self.bemol
-
-        self.reset_notes()
-
-    def switch_notes(self, qte):
-
-        for i, line in enumerate(self.lignes):
-            #print(self.all_text[self.lignes[i]])
-            #ligne de notes
-            old_text = teletype.extractText(self.all_text[line])
-            newer_text = ""
-            new_notes = []
-
-            for note in self.notes[i].notes:
-                new_notes.append(self.gamme.switch_note(note, self.bemol, qte).note)
-
-
-            print("NOTESET")
-            self.notes[i].show_noteset()
-
-            print("NEW NOTESET : " + str(new_notes))
-
-            cpt = 0
-
-
-            for j in range(len(old_text) - 1):
-                if old_text[j] != " " and old_text[j] != "/" and (old_text[j] == self.notes[i].notes[cpt].note or (old_text[j] + old_text[j+1]) == self.notes[i].notes[cpt].note):
-                    print("NEW NOTE")
-                    newer_text += new_notes[cpt]
-                    cpt += 1
-                    if cpt == len(new_notes):
-                        newer_text += " "
-                        break
-                else:
-                    if old_text[j] != "b" and old_text[j] != "#":
-                        newer_text += old_text[j]
-
-            print("OLD TEXT  : " + old_text)
-            print("NEW TEXT : " + newer_text)
-
-            new_s = text.P()
-            new_s.setAttribute("stylename", self.all_text[line].getAttribute("stylename"))
-            new_s.addText(newer_text)
-            self.all_text[line] = new_s
-
-
-
-        self.reset_notes()
-
-    def save_test(self):
-        new_partition = OpenDocumentText()
-
-        T5_style = Style(name="T5", family="text")
-        T5_style.addElement(TextProperties(fontname="Arial"))
-        new_partition.automaticstyles.addElement(T5_style)
-
-        for i, txt in enumerate(self.all_text):
-            old_text = teletype.extractText(txt)
-            p = text.P(text="", stylename="T5")
-
-            for txt_old in old_text:
-                if txt_old == " " and i in self.lignes:
-                    p.addElement(Span(text=' ', stylename='T5'))
-                else:
-                    p.addText(txt_old)
-
-            new_partition.text.addElement(p)
-        new_partition.save("x_test.odt")
-
-
-
-class TxtPartition:
-    def __init__(self, document):
-        self.gamme = Gamme()
-
-        self.partition = open(document, 'r+')
-        self.partition.seek(0)
-
-        self.all_text = []
-
-        for line in self.partition:
-            if(line.endswith("\n")):
-                new_line = line
-                new_line = new_line[:-2]
-                self.all_text.append(new_line)
-
-            else:
-               self.all_text.append(line)
-
-        for i, line in enumerate(self.all_text):
-            if(not self.all_text[i].endswith("\n")):
-                self.all_text[i] = self.all_text[i] + "\n"
-
-        self.lignes = []
-        self.cpt = 0
-
-        self.line_identification()
-        print(self.lignes)
-
-        self.notes = []
-        self.set_notes()
-
-        self.bemol = self.set_bemol()
-
-        #print("all text = " + self.all_text)
-
-        #print("\n\nligne 4 : " + self.lignes[4])
-        #print(self.lignes[4])
-
-
-    # permet de repérer quelles lignes sont pour les notes desquelles sont pour les paroles
-    def line_identification(self):
-        #id_lines = self.partition.readlines()
-        for i, line in enumerate(self.all_text):
-            if self.noteline_identification(self.all_text[i]):
-                self.lignes.append(i)
-                #print("Ligne de note à la ligne : " + str(self.lignes[self.cpt]))
-                self.cpt += 1
-        print(self.lignes)
-
-    # permet de détecter une ligne de notes  -> determine aussi si on est en diese ou en bemol
-    def noteline_identification(self, ligne):
-        text = ligne
-        print("TEXT : " + text)
-        for i, txt in enumerate(text):
-            if self.check_char_note(txt):
-                if(text[i+1] == " " or text[i+1] == "#" or (text[i+1] == "b" and (text[i+2] == " " or text[i+2].lower == "m" or text[i+2] == "/"))):
-                    return True
-        return False
-
-    def set_bemol(self):
-        for i, _ in enumerate(self.lignes):
-            if self.notes[i].is_bemol():
-                print("BEMOL")
-                return True
-
-        print("DIESE")
-        return False
-
-    def check_char_note(self, char):
-        if char in self.gamme.notes:
-            return True
-
-        return False
-
-    # permet de stocker localement toutes les notes de la partition
-    def set_notes(self):
-        print("SETTING NOTES . . . ")
-        for i, line in enumerate(self.lignes):
-            self.notes.append(TxtNoteSet(self.all_text[self.lignes[i]]))
-            self.notes[i].show_noteset()
-
-    def reset_notes(self):
-        self.notes.clear()
-        for i, line in enumerate(self.lignes):
-            self.notes.append(TxtNoteSet(self.all_text[line]))
-            self.notes[i].show_noteset()
-
-        print("RESETING DONE !\n")
-
-    # permet d'obtenir un index d'une note dans le tableau correspondant
-    def get_char_index(self, char):
-        if self.bemol:
-            for i, note in enumerate(self.gamme.notes_bemol):
-                if note == char:
-                    print("INDEX NOTE = " + str(i))
-                    return i
-        else:
-            for i, note in enumerate(self.gamme.notes_diese):
-                if note == char:
-                    print("INDEX NOTE = " + str(i))
-                    return i
-
-        return -1
-
-
-    def switch_type(self):
-        for i, line in enumerate(self.lignes): 
-            old_text = self.all_text[line]
-            new_text = ""
-
-            new_notes = []
-
-            cpt = 0
-
-            for j, note in enumerate(self.notes[i].notes):
-                ind = self.get_char_index(note.note)
-
-                if self.bemol:
-                    new_notes.append(self.gamme.notes_diese[ind])
-
-                else:
-                    new_notes.append(self.gamme.notes_bemol[ind])
-
-            print("NOTES : " + str(new_notes))
-
-            for j in range(len(old_text) - 1):
-                if (old_text[j] != " " and old_text[j] != "/" and (old_text[j] == self.notes[i].notes[cpt].note or (old_text[j] + old_text[j+1]) == self.notes[i].notes[cpt].note)):
-
-                    print("NEW NOTE")
-                    new_text += new_notes[cpt]
-                    cpt += 1
-
-                    if cpt == len(new_notes):
-                        new_text += " "
-                        break
-                else:
-                    if(old_text[j] != "b" and old_text[j] != "#"):
-                        new_text += old_text[j]
-
-            print("OLD TEXT : " + old_text)
-            print("NEW TEXT : " + new_text)
-
-            self.all_text[line] = new_text
-        self.bemol = not self.bemol
-
-        self.reset_notes()
-
-    def switch_notes(self, qte):
-
-        for i, line in enumerate(self.lignes):
-            #print(self.all_text[self.lignes[i]])
-            #ligne de notes
-            old_text = teletype.extractText(self.all_text[line])
-            newer_text = ""
-            new_notes = []
-
-            for note in self.notes[i].notes:
-                new_notes.append(self.gamme.switch_note(note, self.bemol, qte).note)
-
-
-            print("NOTESET")
-            self.notes[i].show_noteset()
-
-            print("NEW NOTESET : " + str(new_notes))
-
-            cpt = 0
-
-
-            for j in range(len(old_text) - 1):
-                if old_text[j] != " " and old_text[j] != "/" and (old_text[j] == self.notes[i].notes[cpt].note or (old_text[j] + old_text[j+1]) == self.notes[i].notes[cpt].note):
-                    print("NEW NOTE")
-                    newer_text += new_notes[cpt]
-                    cpt += 1
-                    if cpt == len(new_notes):
-                        newer_text += " "
-                        break
-                else:
-                    if old_text[j] != "b" and old_text[j] != "#":
-                        newer_text += old_text[j]
-
-            print("OLD TEXT  : " + old_text)
-            print("NEW TEXT : " + newer_text)
-
-            new_s = text.P()
-            new_s.setAttribute("stylename", self.all_text[line].getAttribute("stylename"))
-            new_s.addText(newer_text)
-            self.all_text[line] = new_s
-
-        #self.reset_notes()
-
-    def save_test(self):
+from PyQt5.QtWidgets import *
+import class_set
+import subprocess
+from PyQt5.QtWidgets import * 
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtGui import * 
+from PyQt5.QtCore import * 
+import sys 
+
+class IconButton():
+
+    def __init__(self, icon, parent, size_x, size_y, icon_size_x, icon_size_y, tooltip = ""):
+
+        self.button = QPushButton("", parent)
+        self.button.resize(size_x, size_y)
         
-        new_partition = open("x_test.txt","w+")
+        
+        self.button.maximumWidth = size_x
+        self.button.maximumHeight = size_y
 
-        for i, txt in enumerate(self.all_text):
-            new_partition.write(txt)
-            new_partition.write("\n")
-            
-            """old_text = teletype.extractText(txt)
-            p = text.P(text="", stylename="T5")
+        self.button.setIconSize(QSize(icon_size_x, icon_size_y))
+        self.button.setIcon(icon)
 
-            for txt_old in old_text:
-                if txt_old == " " and i in self.lignes:
-                    p.addElement(Span(text=' ', stylename='T5'))
-                else:
-                    p.addText(txt_old)
+        self.button.setToolTip(tooltip)
 
-            new_partition.text.addElement(p)"""
+        self.button.setStyleSheet("QPushButton { background-color: rgba(45, 45, 45, 255) ; border-style: outset; border-width: 0px; border-radius: 0px; border-color: rgba(0,0,0,0); }" 
+                                  "QPushButton::pressed { background-color: red }" 
+                                  "QPushButton::hover{background-color : rgba(15, 15, 15, 255)}")
 
-        #new_partition.save("x_test.odt")
+    def emptyButton(parent, size_x, size_y, icon_size_x, icon_size_y):
+        button = QPushButton("", parent)
+        button.resize(size_x, size_y)
+        
+        button.maximumWidth = size_x
+        button.maximumHeight = size_y
+    
+        button.setIconSize(QSize(icon_size_x, icon_size_y))
+        button.setIcon(QIcon("assets/empty.png"))
+
+        button.setStyleSheet("QPushButton { background-color: rgba(0, 0, 0, 0) ; border-style: outset; border-width: 0px; border-radius: 0px; border-color: rgba(0,0,0,0); }")
+
+        return button
+
+    
+
+class MainWindow(QMainWindow): 
+  
+    def __init__(self): 
+        super().__init__()
+        
+        self.setStyleSheet("background-color: rgba(75,75,75,255);") 
+
+        self.diese = True
+
+        QtGui.QFontDatabase.addApplicationFont("asset/font/Lato Light Italic.ttf")
+
+        self.setWindowTitle("Tarpipion") 
+        self.setWindowIcon(QIcon("assets/icon.png"))
+        self.setGeometry(0, 0, 1280, 720) 
+
+        self.dimensions = QDesktopWidget().screenGeometry()
+        
+        self.square_size = int(self.dimensions.height() / 13.5)
+
+        self.menu_layout = QVBoxLayout()
+        self.menu_layout.setGeometry(QRect(0, 0, self.dimensions.width(), self.dimensions.height()))
+
+        
+################################################################################################################################################################################################################
+        #LAYOUT ARRONDI#
+################################################################################################################################################################################################################
+
+        self.partition_layout = QHBoxLayout()
+        self.panel_width = int(self.dimensions.width() / 3.2)
+        
+        self.frame_left = QFrame(self)
+        self.frame_left.setFrameShape(QFrame.Box)
+        self.frame_left.resize(self.panel_width, self.square_size * 2)
+        self.frame_left.setStyleSheet("QFrame { background-color: rgba(0, 0, 0, 0) ; border-style: outset; border-width: 0px; border-radius: 0px; border-color: rgba(0,0,0,0); }")
+
+        self.frame_right = QFrame(self)
+        self.frame_right.setFrameShape(QFrame.Box)
+        self.frame_right.resize(self.panel_width, self.square_size * 2)
+        self.frame_right.setStyleSheet("QFrame { background-color: rgba(0, 0, 0, 0) ; border-style: outset; border-width: 0px; border-radius: 0px; border-color: rgba(0,0,0,0); }")
+
+        self.frame = QFrame(self)
+        self.frame.setFrameShape(QFrame.Box)
+        self.frame.resize(self.panel_width, self.square_size * 2)
+        self.frame.setStyleSheet("QFrame { background-color: rgba(45, 45, 45, 255) ; border-style: outset; border-width: 0px; border-radius: 75px; border-color: rgba(0,0,0,0); }")
+
+        self.partition_layout.addWidget(self.frame_left, 1)
+        self.partition_layout.addWidget(self.frame, 1)
+        self.partition_layout.addWidget(self.frame_right, 1)
+
+        self.partition_layout.setGeometry(QRect(0,0, self.dimensions.width(), self.square_size * 2))
+        
+
+################################################################################################################################################################################################################
+        #LAYOUT DE BOUTONS DE PARTITION#
+################################################################################################################################################################################################################
+
+        self.partition_menu_layout = QHBoxLayout()
+        self.panel_width = int(self.dimensions.width() / 3.2)
+        
+        self.frame_left = QFrame(self)
+        self.frame_left.setFrameShape(QFrame.Box)
+        self.frame_left.resize(self.panel_width, self.square_size * 2)
+        self.frame_left.setStyleSheet("QFrame { background-color: rgba(0, 0, 0, 0) ; border-style: outset; border-width: 0px; border-radius: 0px; border-color: rgba(0,0,0,0); }")
+
+        self.frame_right = QFrame(self)
+        self.frame_right.setFrameShape(QFrame.Box)
+        self.frame_right.resize(self.panel_width, self.square_size * 2)
+        self.frame_right.setStyleSheet("QFrame { background-color: rgba(0, 0, 0, 0) ; border-style: outset; border-width: 0px; border-radius: 0px; border-color: rgba(0,0,0,0); }")
+
+        self.diese_icon = QIcon("assets/diese_mieux.png")
+        self.bemol_icon = QIcon("assets/bemol_mieux.png")
+
+        #BOUTON TYPE - DEMOL / DIESE
+        self.type_button = IconButton(self.diese_icon, self, self.square_size, self.square_size*2, self.square_size, self.square_size*2, "New File")
+        self.type_button.button.setCheckable(True)
+        self.type_button.button.clicked.connect(self.switchTypeIcon)
+
+        #SEPARATION
+        self.button_spacer = IconButton.emptyButton(self, self.square_size, self.square_size*2, self.square_size, self.square_size*2)
+
+        #BOUTON REDUCTION
+        minus = QIcon("assets/minus_mieux.png")
+        self.minus_button = IconButton(minus, self, self.square_size, self.square_size*2, self.square_size, self.square_size*2, "New File")
+
+        #LABEL DEMI TON
+        self.demi_ton = QLabel(self)
+        pixmap = QPixmap("assets/demi_ton_mieux.png")
+        small_pixmap = pixmap.scaled(self.square_size * 2, self.square_size * 2, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.demi_ton.setPixmap(small_pixmap)
+        self.demi_ton.show()
+        self.demi_ton.setStyleSheet("background-color: rgba(45,45,45,255);") 
+
+        #BOUTON AUGMENTATION
+        plus = QIcon("assets/plus_mieux.png")
+        self.plus_button = IconButton(plus, self, self.square_size, self.square_size*2, self.square_size, self.square_size*2, "New File")
+
+        self.partition_menu_layout.addWidget(self.frame_left, 1)
+        self.partition_menu_layout.addWidget(self.type_button.button, 0)
+        self.partition_menu_layout.addWidget(self.button_spacer, 0)
+        self.partition_menu_layout.addWidget(self.minus_button.button, 0)
+        self.partition_menu_layout.addWidget(self.demi_ton, 0)
+        self.partition_menu_layout.addWidget(self.plus_button.button, 0)
+
+        self.partition_menu_layout.addWidget(self.frame_right, 1)
+
+        self.partition_menu_layout.setGeometry(QRect(0,0, self.dimensions.width(), self.square_size * 2))
+
+################################################################################################################################################################################################################
+        #LAYOUT D'ACCUEIL#
+################################################################################################################################################################################################################
+        
+        self.button_layout = QHBoxLayout()
+
+        new_icon = QIcon("assets/new_mieux.png")
+        self.new_button = IconButton(new_icon, self, self.square_size, self.square_size, self.square_size, self.square_size, "New File")
+
+        open_icon = QIcon("assets/open_mieux.png")
+        self.open_button = IconButton(open_icon, self, self.square_size, self.square_size, self.square_size, self.square_size, "Open File")
+        self.open_button.button.setCheckable(True)
+        self.open_button.button.clicked.connect(self.openFile)
+
+        save_icon = QIcon("assets/save_mieux.png")
+        self.save_button = IconButton(save_icon, self, self.square_size, self.square_size, self.square_size, self.square_size, "Save File")
+
+        self.button_layout.addWidget(self.new_button.button,0)
+        self.button_layout.addWidget(self.open_button.button,0)
+        self.button_layout.addWidget(self.save_button.button,0)
+
+        self.label = QLabel(self)
+        self.label.setText("Vegedream ft. Ninho - Elle est bonne sa mère")
+        self.label.setAlignment(QtCore.Qt.AlignCenter)
+        self.label.setStyleSheet("QLabel { color : rgba(230, 230, 230, 255) ;  background-color : rgba(45, 45, 45, 255) ; font-family : Lato ; font-style : italic ;  font-size : 48px }")
+
+        self.button_layout.addWidget(self.label,1)
+
+        self.button_layout.setSpacing(0)
+        self.button_layout.setGeometry(QRect(0,0, self.dimensions.width(), self.square_size))
+        
+
+################################################################################################################################################################################################################
+        #LAYOUT DE PARTITIONS#
+################################################################################################################################################################################################################
+
+        self.partition_text_layout = QHBoxLayout()
+
+        self.partition_originale = QScrollArea(self)
+        self.partition_originale.setViewportMargins(QMargins(self.square_size / 6, self.square_size / 6, self.square_size / 6, self.square_size / 6))
+        self.partition_originale.setStyleSheet("QScrollArea {background-color: rgba(230,230,230,255);}")
+
+        self.partition_modifiee = QScrollArea(self)
+        self.partition_modifiee.setViewportMargins(QMargins(self.square_size / 6, self.square_size / 6, self.square_size / 6, self.square_size / 6))
+        self.partition_modifiee.setStyleSheet("QScrollArea {background-color: rgba(230,230,230,255);}")
 
 
+        self.text_size = 14
+
+        self.partition_text_layout.addWidget(self.partition_originale, 0)
+        self.partition_text_layout.addWidget(self.partition_modifiee, 0)
+        self.partition_text_layout.setSpacing(self.square_size)
+        self.partition_text_layout.setGeometry(QRect(self.dimensions.width() * .175, self.dimensions.height() * .166667, self.dimensions.width() * .65, self.dimensions.height() * .75))
+
+        self.showMaximized()
 
 
+    def openFile(self, pressed):
+        name = QFileDialog.getOpenFileName(self, 'Open File', 'C\\', 'Text files (*.txt)')
+        path = name[0]
+
+        with open(path, "r") as f:
+            text = f.read()
+
+            partition_originale_text = QLabel()
+            partition_originale_text.setText(text)
+            partition_originale_text.setStyleSheet("QLabel { color : rgba(75, 75, 75, 255) ;  background-color : rgba(0, 0, 0, 0) ; font-family : Lato ;  font-size : "+str(self.text_size)+"px }")
 
 
+            partition_originale_text2 = QLabel()
+            partition_originale_text2.setText(text)
+            partition_originale_text2.setStyleSheet("QLabel { color : rgba(75, 75, 75, 255) ;  background-color : rgba(0, 0, 0, 0) ; font-family : Lato ;  font-size : "+str(self.text_size)+"px }")
 
 
+            self.partition_originale.setWidget(partition_originale_text)
+            self.partition_modifiee.setWidget(partition_originale_text2)
+
+    def switchTypeIcon(self, pressed):
+
+        source = self.sender()
+
+        if(self.diese):
+            source.setIcon(self.bemol_icon)
+            self.setTitre("Garou ft. Céline Dion - Sous le vent j'ai sorti la grand voile")
+        else:
+            source.setIcon(self.diese_icon)
+            self.setTitre("Vegedream ft. Ninho - Elle est bonne sa mère")
+
+        self.diese = not self.diese
+
+    def setTitre(self, titre):
+        cpt = 0
+        new_titre = ""
+
+        for i in titre:
+            cpt += 1
+            new_titre = new_titre + i
+            if cpt >= 60:
+                new_titre = new_titre + "..."
+                break
+
+        self.label.setText(new_titre)
 
 
+# create pyqt5 app 
+App = QApplication(sys.argv) 
 
-
-if __name__ == '__main__':
-
-    txt_partition = TxtPartition("test/e_TxtTest.txt")
-    txt_partition.switch_type()
-    txt_partition.save_test()
-
-"""    gamme = Gamme()
-    testdoc = load("test/d_TranspoTest.odt")
-    odt_partition = OdtPartition(testdoc)
-    odt_partition.switch_notes(3)
-
-    odt_partition.switch_type()
-
-    print("\n\n\n")
-    for i in range(len(odt_partition.all_text)):
-        print(odt_partition.all_text[i])
-
-    odt_partition.switch_type()
-    odt_partition.save_test()
-"""
+# create the instance of our Window 
+window = MainWindow() 
+  
+# start the app 
+sys.exit(App.exec_()) 
