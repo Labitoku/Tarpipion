@@ -140,37 +140,40 @@ class TxtPartition:
 
 
         self.all_text = []
-
-        
+        self.surplus = []
 
         for line in self.partition:
+            print(line)
             if(line.endswith("\n")):
                 new_line = line
                 new_line = new_line[:-1]
                 self.all_text.append(new_line)
 
             else:
-               self.all_text.append(line)
+                self.all_text.append(line)
 
         for i, line in enumerate(self.all_text):
+            #if(self.all_text[i].startswith(" ")):
+             #   self.all_text[i] = self.all_text[i][1:]
             if(not self.all_text[i].endswith("\n")):
                 self.all_text[i] = self.all_text[i] + "\n"
-                
+        
 
         self.lignes = []
-        self.cpt = 0
-
-        self.line_identification()
-        print("LINES : ")
-        print(self.lignes)
 
         self.titre = ""
         self.set_titre()
+        self.remove_surplus()
 
-        #self.remove_surplus()
+        self.line_identification()
+        print("LINES : ")
+        print(self.lignes)        
 
         self.notes = []
         self.set_notes()
+
+
+
 
         self.bemol = self.set_bemol()
 
@@ -181,31 +184,37 @@ class TxtPartition:
         #print(self.lignes[4])
 
     def remove_surplus(self):
+
         cpt_lines = 0
         for i, line in enumerate(self.all_text):
             if cpt_lines < 3:
-                if self.all_text[0].startswith(' ----'):
+                if '-------' in self.all_text[0]:
                     cpt_lines += 1
+                self.surplus.append(self.all_text[0])
                 self.all_text.pop(0)
         if self.all_text[0].lower().startswith('\n'):
+            self.surplus.append(self.all_text[0])
             self.all_text.pop(0)
+
+    def add_surplus(self):
+        for i, line in enumerate(self.surplus):
+            self.all_text.insert(0, self.surplus[len(self.surplus) - 1 - i])
+
 
     # permet de repérer quelles lignes sont pour les notes desquelles sont pour les paroles
     def line_identification(self):
-        #id_lines = self.partition.readlines()
         for i, line in enumerate(self.all_text):
+            print(str(i))
             if self.noteline_identification(self.all_text[i]):
                 self.lignes.append(i)
                 #print("Ligne de note à la ligne : " + str(self.lignes[self.cpt]))
-                self.cpt += 1
-        print(self.lignes)
 
     # permet de détecter une ligne de notes  -> determine aussi si on est en diese ou en bemol
     def noteline_identification(self, ligne):
         text = ligne
         for i, txt in enumerate(text):
             if self.check_char_note(txt):
-                if(text[i+1] == " " or text[i+1] == "#" or (text[i+1] == "b" and (text[i+2] == " " or text[i+2].lower == "m" or text[i+2] == "/"))):
+                if(text[i] == "|" or text[i+1] == " " or text[i+1] == "#" or (text[i+1] == "b" and (text[i+2] == " " or text[i+2].lower == "m" or text[i+2] == "/"))):
                     return True
         return False
 
@@ -221,7 +230,6 @@ class TxtPartition:
     def check_char_note(self, char):
         if char in self.gamme.notes:
             return True
-
         return False
 
     # permet de stocker localement toutes les notes de la partition
@@ -360,7 +368,7 @@ class TxtPartition:
         if self.titre == "":
             self.titre = "Sans titre"
 
-    def save_test(self):
+    """def save_test(self):
         
         new_partition = open("z_test.txt","w+")
 
@@ -368,7 +376,7 @@ class TxtPartition:
             new_partition.write(txt)
             new_partition.write("\n")
             
-            """old_text = teletype.extractText(txt)
+            old_text = teletype.extractText(txt)
             p = text.P(text="", stylename="T5")
 
             for txt_old in old_text:
@@ -392,14 +400,14 @@ class TxtPartition:
 
 
 
-
+"""
 if __name__ == '__main__':
 
     txt_partition = TxtPartition("test/e_TxtTest.txt")
     txt_partition.switch_type()
     txt_partition.save_test()
 
-"""    gamme = Gamme()
+    gamme = Gamme()
     testdoc = load("test/d_TranspoTest.odt")
     odt_partition = OdtPartition(testdoc)
     odt_partition.switch_notes(3)

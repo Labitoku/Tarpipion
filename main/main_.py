@@ -51,6 +51,8 @@ class MainWindow(QMainWindow):
         
         self.setStyleSheet("background-color: rgba(75,75,75,255);") 
 
+        self.partition = None
+
         self.diese = True
 
         QtGui.QFontDatabase.addApplicationFont("asset/font/Lato Light Italic.ttf")
@@ -65,8 +67,8 @@ class MainWindow(QMainWindow):
 
         self.menu_layout = QVBoxLayout()
         self.menu_layout.setGeometry(QRect(0, 0, self.dimensions.width(), self.dimensions.height()))
-
         
+
 ################################################################################################################################################################################################################
         #LAYOUT ARRONDI#
 ################################################################################################################################################################################################################
@@ -117,7 +119,7 @@ class MainWindow(QMainWindow):
         self.bemol_icon = QIcon("assets/bemol_mieux.png")
 
         #BOUTON TYPE - DEMOL / DIESE
-        self.type_button = IconButton(self.diese_icon, self, self.square_size, self.square_size*2, self.square_size, self.square_size*2, "New File")
+        self.type_button = IconButton(self.diese_icon, self, self.square_size, self.square_size*2, self.square_size, self.square_size*2, "Changer Altération")
         self.type_button.button.setCheckable(True)
         self.type_button.button.clicked.connect(self.switch_type)
 
@@ -126,7 +128,7 @@ class MainWindow(QMainWindow):
 
         #BOUTON REDUCTION
         minus = QIcon("assets/minus_mieux.png")
-        self.minus_button = IconButton(minus, self, self.square_size, self.square_size*2, self.square_size, self.square_size*2, "New File")
+        self.minus_button = IconButton(minus, self, self.square_size, self.square_size*2, self.square_size, self.square_size*2, "Baisser d'un demi ton")
         self.minus_button.button.setCheckable(True)
         self.minus_button.button.clicked.connect(self.down_switch_note)
 
@@ -140,7 +142,7 @@ class MainWindow(QMainWindow):
 
         #BOUTON AUGMENTATION
         plus = QIcon("assets/plus_mieux.png")
-        self.plus_button = IconButton(plus, self, self.square_size, self.square_size*2, self.square_size, self.square_size*2, "New File")
+        self.plus_button = IconButton(plus, self, self.square_size, self.square_size*2, self.square_size, self.square_size*2, "Augmenter d'un demi ton")
         self.plus_button.button.setCheckable(True)
         self.plus_button.button.clicked.connect(self.up_switch_note)
 
@@ -162,25 +164,32 @@ class MainWindow(QMainWindow):
         
         self.button_layout = QHBoxLayout()
 
-        new_icon = QIcon("assets/new_mieux.png")
-        self.new_button = IconButton(new_icon, self, self.square_size, self.square_size, self.square_size, self.square_size, "New File")
+        #new_icon = QIcon("assets/new_mieux.png")
+        #self.new_button = IconButton(new_icon, self, self.square_size, self.square_size, self.square_size, self.square_size, "New File")
 
         open_icon = QIcon("assets/open_mieux.png")
-        self.open_button = IconButton(open_icon, self, self.square_size, self.square_size, self.square_size, self.square_size, "Open File")
+        self.open_button = IconButton(open_icon, self, self.square_size, self.square_size, self.square_size, self.square_size, "Ouvrir un fichier")
         self.open_button.button.setCheckable(True)
         self.open_button.button.clicked.connect(self.open_file)
+        self.open_button.button.setShortcut
 
         save_icon = QIcon("assets/save_mieux.png")
-        self.save_button = IconButton(save_icon, self, self.square_size, self.square_size, self.square_size, self.square_size, "Save File")
+        self.save_button = IconButton(save_icon, self, self.square_size, self.square_size, self.square_size, self.square_size, "Sauvegarder un fichier")
+        self.save_button.button.setCheckable(True)
+        self.save_button.button.clicked.connect(self.save_file)
 
-        self.button_layout.addWidget(self.new_button.button,0)
+
+        #self.button_layout.addWidget(self.new_button.button,0)
         self.button_layout.addWidget(self.open_button.button,0)
         self.button_layout.addWidget(self.save_button.button,0)
 
         self.label = QLabel(self)
         self.label.setText("Aucune partition")
         self.label.setAlignment(QtCore.Qt.AlignCenter)
-        self.label.setStyleSheet("QLabel { color : rgba(230, 230, 230, 255) ;  background-color : rgba(45, 45, 45, 255) ; font-family : Lato ; font-style : italic ;  font-size : 48px }")
+
+        self.titre_text_size = int(self.square_size * .6)
+        print("TITLE SIZE : " + str(self.titre_text_size))
+        self.label.setStyleSheet("QLabel { color : rgba(230, 230, 230, 255) ;  background-color : rgba(45, 45, 45, 255) ; font-family : Lato ; font-style : italic ;  font-size : "+str(self.titre_text_size)+"px }")
 
         self.button_layout.addWidget(self.label,1)
 
@@ -241,16 +250,11 @@ class MainWindow(QMainWindow):
                 partition_originale_text.setStyleSheet("QLabel { color : rgba(75, 75, 75, 255) ;  background-color : rgba(0, 0, 0, 0) ; font-family : Lato ;  font-size : "+str(self.text_size)+"px }")
 
 
-                #partition_modifiee_text = QLabel()
-                #partition_modifiee_text.setText(text)
-                #partition_modifiee_text.setStyleSheet("QLabel { color : rgba(75, 75, 75, 255) ;  background-color : rgba(0, 0, 0, 0) ; font-family : Lato ;  font-size : "+str(self.text_size)+"px }")
 
 
                 self.partition_originale.setWidget(partition_originale_text)
-                #self.partition_modifiee.setWidget(partition_modifiee_text)
 
                 self.unfade(self.partition_originale.findChild(QLabel))
-                #self.unfade(self.partition_modifiee.findChild(QLabel))
 
                 self.set_titre(self.partition.titre)
 
@@ -259,11 +263,29 @@ class MainWindow(QMainWindow):
         except FileNotFoundError:
             pass
 
+    def save_file(self, pressed):
+        if(not self.partition == None):
+            try:
+                name = QFileDialog.getSaveFileName(self, 'Save File', 'C\\', 'Text files (*.txt)')
+                path = name[0]
+                file = open(path,'w+')
+                self.partition.add_surplus()
+                for i, txt in enumerate(self.partition.all_text):
+                    file.write(txt)
+                    #new_partition.write("\n")
+
+                #file.write(self.partition.all_text)
+                file.close()
+                self.partition.remove_surplus()
+
+            except FileNotFoundError:
+                pass
+
+
     def switch_type(self, pressed):
         try:
             if self.partition:
                 source = self.sender()
-
                 if(self.diese):
                     source.setIcon(self.bemol_icon)
                 else:
@@ -278,7 +300,7 @@ class MainWindow(QMainWindow):
                 partition_new.setStyleSheet("QLabel { color : rgba(75, 75, 75, 255) ;  background-color : rgba(0, 0, 0, 0) ; font-family : Lato ;  font-size : "+str(self.text_size)+"px }")
                 
                 self.partition_modifiee.setWidget(partition_new)
-                self.unfade(self.partition_modifiee.findChild(QLabel))
+                #self.unfade(self.partition_modifiee.findChild(QLabel))
 
                 self.diese = not self.diese
 
@@ -299,7 +321,7 @@ class MainWindow(QMainWindow):
             
                 self.partition_modifiee.setWidget(partition_new)
 
-                self.unfade(self.partition_modifiee.findChild(QLabel))
+                #self.unfade(self.partition_modifiee.findChild(QLabel))
         except AttributeError:
             pass
 
@@ -317,7 +339,7 @@ class MainWindow(QMainWindow):
                 
                 self.partition_modifiee.setWidget(partition_new)
 
-                self.unfade(self.partition_modifiee.findChild(QLabel))
+                #self.unfade(self.partition_modifiee.findChild(QLabel))
 
         except AttributeError:
             pass
@@ -355,9 +377,6 @@ class MainWindow(QMainWindow):
         self.animation.setStartValue(0)
         self.animation.setEndValue(1)
         self.animation.start()
-
-
-
 
 # create pyqt5 app 
 App = QApplication(sys.argv) 
