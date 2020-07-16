@@ -1,3 +1,4 @@
+# coding: utf8 
 from PyQt5.QtWidgets import *
 import class_set
 import subprocess
@@ -27,7 +28,7 @@ class IconButton():
                                   "QPushButton::pressed { background-color: red }" 
                                   "QPushButton::hover{background-color : rgba(15, 15, 15, 255)}")
 
-    def emptyButton(parent, size_x, size_y, icon_size_x, icon_size_y):
+    def empty_button(parent, size_x, size_y, icon_size_x, icon_size_y):
         button = QPushButton("", parent)
         button.resize(size_x, size_y)
         
@@ -118,14 +119,16 @@ class MainWindow(QMainWindow):
         #BOUTON TYPE - DEMOL / DIESE
         self.type_button = IconButton(self.diese_icon, self, self.square_size, self.square_size*2, self.square_size, self.square_size*2, "New File")
         self.type_button.button.setCheckable(True)
-        self.type_button.button.clicked.connect(self.switchTypeIcon)
+        self.type_button.button.clicked.connect(self.switch_type)
 
         #SEPARATION
-        self.button_spacer = IconButton.emptyButton(self, self.square_size, self.square_size*2, self.square_size, self.square_size*2)
+        self.button_spacer = IconButton.empty_button(self, self.square_size, self.square_size*2, self.square_size, self.square_size*2)
 
         #BOUTON REDUCTION
         minus = QIcon("assets/minus_mieux.png")
         self.minus_button = IconButton(minus, self, self.square_size, self.square_size*2, self.square_size, self.square_size*2, "New File")
+        self.minus_button.button.setCheckable(True)
+        self.minus_button.button.clicked.connect(self.down_switch_note)
 
         #LABEL DEMI TON
         self.demi_ton = QLabel(self)
@@ -138,6 +141,9 @@ class MainWindow(QMainWindow):
         #BOUTON AUGMENTATION
         plus = QIcon("assets/plus_mieux.png")
         self.plus_button = IconButton(plus, self, self.square_size, self.square_size*2, self.square_size, self.square_size*2, "New File")
+        self.plus_button.button.setCheckable(True)
+        self.plus_button.button.clicked.connect(self.up_switch_note)
+
 
         self.partition_menu_layout.addWidget(self.frame_left, 1)
         self.partition_menu_layout.addWidget(self.type_button.button, 0)
@@ -162,7 +168,7 @@ class MainWindow(QMainWindow):
         open_icon = QIcon("assets/open_mieux.png")
         self.open_button = IconButton(open_icon, self, self.square_size, self.square_size, self.square_size, self.square_size, "Open File")
         self.open_button.button.setCheckable(True)
-        self.open_button.button.clicked.connect(self.openFile)
+        self.open_button.button.clicked.connect(self.open_file)
 
         save_icon = QIcon("assets/save_mieux.png")
         self.save_button = IconButton(save_icon, self, self.square_size, self.square_size, self.square_size, self.square_size, "Save File")
@@ -172,7 +178,7 @@ class MainWindow(QMainWindow):
         self.button_layout.addWidget(self.save_button.button,0)
 
         self.label = QLabel(self)
-        self.label.setText("Vegedream ft. Ninho - Elle est bonne sa mère")
+        self.label.setText("Aucune partition")
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setStyleSheet("QLabel { color : rgba(230, 230, 230, 255) ;  background-color : rgba(45, 45, 45, 255) ; font-family : Lato ; font-style : italic ;  font-size : 48px }")
 
@@ -189,11 +195,11 @@ class MainWindow(QMainWindow):
         self.partition_text_layout = QHBoxLayout()
 
         self.partition_originale = QScrollArea(self)
-        self.partition_originale.setViewportMargins(QMargins(self.square_size / 6, self.square_size / 6, self.square_size / 6, self.square_size / 6))
+        self.partition_originale.setViewportMargins(QMargins(int(self.square_size / 6), int(self.square_size / 6), int(self.square_size / 6), int(self.square_size / 6)))
         self.partition_originale.setStyleSheet("QScrollArea {background-color: rgba(230,230,230,255);}")
 
         self.partition_modifiee = QScrollArea(self)
-        self.partition_modifiee.setViewportMargins(QMargins(self.square_size / 6, self.square_size / 6, self.square_size / 6, self.square_size / 6))
+        self.partition_modifiee.setViewportMargins(QMargins(int(self.square_size / 6), int(self.square_size / 6), int(self.square_size / 6), int(self.square_size / 6)))
         self.partition_modifiee.setStyleSheet("QScrollArea {background-color: rgba(230,230,230,255);}")
 
 
@@ -202,56 +208,155 @@ class MainWindow(QMainWindow):
         self.partition_text_layout.addWidget(self.partition_originale, 0)
         self.partition_text_layout.addWidget(self.partition_modifiee, 0)
         self.partition_text_layout.setSpacing(self.square_size)
-        self.partition_text_layout.setGeometry(QRect(self.dimensions.width() * .175, self.dimensions.height() * .166667, self.dimensions.width() * .65, self.dimensions.height() * .75))
+        self.partition_text_layout.setGeometry(QRect(int(self.dimensions.width() * .175), int(self.dimensions.height() * .166667), int(self.dimensions.width() * .65), int(self.dimensions.height() * .75)))
 
         self.showMaximized()
 
 
-    def openFile(self, pressed):
-        name = QFileDialog.getOpenFileName(self, 'Open File', 'C\\', 'Text files (*.txt)')
-        path = name[0]
+    def open_file(self, pressed):
 
-        with open(path, "r") as f:
-            text = f.read()
+        try:
+            label_b = QLabel("")
+            self.partition_modifiee.setWidget(label_b)
 
-            partition_originale_text = QLabel()
-            partition_originale_text.setText(text)
-            partition_originale_text.setStyleSheet("QLabel { color : rgba(75, 75, 75, 255) ;  background-color : rgba(0, 0, 0, 0) ; font-family : Lato ;  font-size : "+str(self.text_size)+"px }")
+            name = QFileDialog.getOpenFileName(self, 'Open File', 'C\\', 'Text files (*.txt)')
+            path = name[0]
+            self.partition = class_set.TxtPartition(path)
+            
+            label_a = QLabel()
+            #label_b = QLabel()
+
+            self.partition_originale.setWidget(label_a)
+            #self.partition_modifiee.setWidget(label_b)
+
+            with open(path, "r", encoding="utf-8") as f:
 
 
-            partition_originale_text2 = QLabel()
-            partition_originale_text2.setText(text)
-            partition_originale_text2.setStyleSheet("QLabel { color : rgba(75, 75, 75, 255) ;  background-color : rgba(0, 0, 0, 0) ; font-family : Lato ;  font-size : "+str(self.text_size)+"px }")
+                text = ""
+                for t in self.partition.all_text:
+                        text += t
+
+                partition_originale_text = QLabel()
+                partition_originale_text.setText(text)
+                partition_originale_text.setStyleSheet("QLabel { color : rgba(75, 75, 75, 255) ;  background-color : rgba(0, 0, 0, 0) ; font-family : Lato ;  font-size : "+str(self.text_size)+"px }")
 
 
-            self.partition_originale.setWidget(partition_originale_text)
-            self.partition_modifiee.setWidget(partition_originale_text2)
+                #partition_modifiee_text = QLabel()
+                #partition_modifiee_text.setText(text)
+                #partition_modifiee_text.setStyleSheet("QLabel { color : rgba(75, 75, 75, 255) ;  background-color : rgba(0, 0, 0, 0) ; font-family : Lato ;  font-size : "+str(self.text_size)+"px }")
 
-    def switchTypeIcon(self, pressed):
 
-        source = self.sender()
+                self.partition_originale.setWidget(partition_originale_text)
+                #self.partition_modifiee.setWidget(partition_modifiee_text)
 
-        if(self.diese):
-            source.setIcon(self.bemol_icon)
-            self.setTitre("Garou ft. Céline Dion - Sous le vent j'ai sorti la grand voile")
-        else:
-            source.setIcon(self.diese_icon)
-            self.setTitre("Vegedream ft. Ninho - Elle est bonne sa mère")
+                self.unfade(self.partition_originale.findChild(QLabel))
+                #self.unfade(self.partition_modifiee.findChild(QLabel))
 
-        self.diese = not self.diese
+                self.set_titre(self.partition.titre)
 
-    def setTitre(self, titre):
+                print(self.partition.notes[0])
+
+        except FileNotFoundError:
+            pass
+
+    def switch_type(self, pressed):
+        try:
+            if self.partition:
+                source = self.sender()
+
+                if(self.diese):
+                    source.setIcon(self.bemol_icon)
+                else:
+                    source.setIcon(self.diese_icon)
+
+                self.partition.switch_type()
+                partition_new = QLabel()
+                text = ""
+                for t in self.partition.all_text:
+                    text += t
+                partition_new.setText(text)
+                partition_new.setStyleSheet("QLabel { color : rgba(75, 75, 75, 255) ;  background-color : rgba(0, 0, 0, 0) ; font-family : Lato ;  font-size : "+str(self.text_size)+"px }")
+                
+                self.partition_modifiee.setWidget(partition_new)
+                self.unfade(self.partition_modifiee.findChild(QLabel))
+
+                self.diese = not self.diese
+
+        except AttributeError:
+            pass
+
+
+    def up_switch_note(self, pressed):
+        try:
+            if self.partition:
+                self.partition.switch_notes(1)
+                partition_new = QLabel()
+                text = ""
+                for t in self.partition.all_text:
+                    text += t
+                partition_new.setText(text)
+                partition_new.setStyleSheet("QLabel { color : rgba(75, 75, 75, 255) ;  background-color : rgba(0, 0, 0, 0) ; font-family : Lato ;  font-size : "+str(self.text_size)+"px }")
+            
+                self.partition_modifiee.setWidget(partition_new)
+
+                self.unfade(self.partition_modifiee.findChild(QLabel))
+        except AttributeError:
+            pass
+
+    def down_switch_note(self, pressed):
+        try:
+            if self.partition:
+                self.partition.switch_notes(-1)
+                partition_new = QLabel()
+                text = ""
+                for t in self.partition.all_text:
+                    text += t
+                print("TEXT IN CODE 2 : " + text)
+                partition_new.setText(text)
+                partition_new.setStyleSheet("QLabel { color : rgba(75, 75, 75, 255) ;  background-color : rgba(0, 0, 0, 0) ; font-family : Lato ;  font-size : "+str(self.text_size)+"px }")
+                
+                self.partition_modifiee.setWidget(partition_new)
+
+                self.unfade(self.partition_modifiee.findChild(QLabel))
+
+        except AttributeError:
+            pass
+
+
+    def set_titre(self, titre):
         cpt = 0
         new_titre = ""
 
         for i in titre:
             cpt += 1
             new_titre = new_titre + i
-            if cpt >= 60:
+            if cpt >= 75:
                 new_titre = new_titre + "..."
                 break
 
         self.label.setText(new_titre)
+    
+    def fade(self, widget):
+        self.effect = QGraphicsOpacityEffect()
+        widget.setGraphicsEffect(self.effect)
+
+        self.animation = QtCore.QPropertyAnimation(self.effect, b"opacity")
+        self.animation.setDuration(500)
+        self.animation.setStartValue(1)
+        self.animation.setEndValue(0)
+        self.animation.start()
+
+    def unfade(self, widget):
+        self.effect = QGraphicsOpacityEffect()
+        widget.setGraphicsEffect(self.effect)
+
+        self.animation = QtCore.QPropertyAnimation(self.effect, b"opacity")
+        self.animation.setDuration(500)
+        self.animation.setStartValue(0)
+        self.animation.setEndValue(1)
+        self.animation.start()
+
+
 
 
 # create pyqt5 app 
