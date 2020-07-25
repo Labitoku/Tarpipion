@@ -42,8 +42,6 @@ class IconButton():
 
         return button
 
-    
-
 class MainWindow(QMainWindow): 
   
     def __init__(self): 
@@ -89,7 +87,7 @@ class MainWindow(QMainWindow):
         self.frame = QFrame(self)
         self.frame.setFrameShape(QFrame.Box)
         self.frame.resize(self.panel_width, self.square_size * 2)
-        self.frame.setStyleSheet("QFrame { background-color: rgba(45, 45, 45, 255) ; border-style: outset; border-width: 0px; border-radius: 75px; border-color: rgba(0,0,0,0); }")
+        self.frame.setStyleSheet("QFrame { background-color: rgba(45, 45, 45, 255) ; border-style: outset; border-width: 0px; border-radius: "+str(self.square_size)+"px; border-color: rgba(0,0,0,0); }")
 
         self.partition_layout.addWidget(self.frame_left, 1)
         self.partition_layout.addWidget(self.frame, 1)
@@ -119,12 +117,12 @@ class MainWindow(QMainWindow):
         self.bemol_icon = QIcon("assets/bemol_mieux.png")
 
         #BOUTON TYPE - DEMOL / DIESE
-        self.type_button = IconButton(self.diese_icon, self, self.square_size, self.square_size*2, self.square_size, self.square_size*2, "Changer Altération")
-        self.type_button.button.setCheckable(True)
-        self.type_button.button.clicked.connect(self.switch_type)
+        #self.type_button = IconButton(self.diese_icon, self, self.square_size, self.square_size*2, self.square_size, self.square_size*2, "Changer Altération")
+        #self.type_button.button.setCheckable(True)
+        #self.type_button.button.clicked.connect(self.switch_type)
 
         #SEPARATION
-        self.button_spacer = IconButton.empty_button(self, self.square_size, self.square_size*2, self.square_size, self.square_size*2)
+        #self.button_spacer = IconButton.empty_button(self, self.square_size, self.square_size*2, self.square_size, self.square_size*2)
 
         #BOUTON REDUCTION
         minus = QIcon("assets/minus_mieux.png")
@@ -148,8 +146,8 @@ class MainWindow(QMainWindow):
 
 
         self.partition_menu_layout.addWidget(self.frame_left, 1)
-        self.partition_menu_layout.addWidget(self.type_button.button, 0)
-        self.partition_menu_layout.addWidget(self.button_spacer, 0)
+        #self.partition_menu_layout.addWidget(self.type_button.button, 0)
+        #self.partition_menu_layout.addWidget(self.button_spacer, 0)
         self.partition_menu_layout.addWidget(self.minus_button.button, 0)
         self.partition_menu_layout.addWidget(self.demi_ton, 0)
         self.partition_menu_layout.addWidget(self.plus_button.button, 0)
@@ -158,8 +156,28 @@ class MainWindow(QMainWindow):
 
         self.partition_menu_layout.setGeometry(QRect(0,0, self.dimensions.width(), self.square_size * 2))
 
+
 ################################################################################################################################################################################################################
-        #LAYOUT D'ACCUEIL#
+        #LAYOUT DE TITRE#
+################################################################################################################################################################################################################
+
+        self.title_layout = QHBoxLayout()
+
+
+        self.titre = QLabel(self)
+        self.titre.setText("Aucune partition")
+        self.titre.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.titre_text_size = int(self.square_size * .6)
+        print("TITLE SIZE : " + str(self.titre_text_size))
+        self.titre.setStyleSheet("QLabel { color : rgba(230, 230, 230, 255) ;  background-color : rgba(45, 45, 45, 255) ; font-family : Lato ; font-style : italic ;  font-size : "+str(self.titre_text_size)+"px }")
+
+        self.title_layout.addWidget(self.titre,1)
+        self.title_layout.setSpacing(0)
+        self.title_layout.setGeometry(QRect(0,0, self.dimensions.width(), self.square_size))
+
+################################################################################################################################################################################################################
+        #LAYOUT DE FICHIERS#
 ################################################################################################################################################################################################################
         
         self.button_layout = QHBoxLayout()
@@ -182,20 +200,10 @@ class MainWindow(QMainWindow):
         #self.button_layout.addWidget(self.new_button.button,0)
         self.button_layout.addWidget(self.open_button.button,0)
         self.button_layout.addWidget(self.save_button.button,0)
-
-        self.label = QLabel(self)
-        self.label.setText("Aucune partition")
-        self.label.setAlignment(QtCore.Qt.AlignCenter)
-
-        self.titre_text_size = int(self.square_size * .6)
-        print("TITLE SIZE : " + str(self.titre_text_size))
-        self.label.setStyleSheet("QLabel { color : rgba(230, 230, 230, 255) ;  background-color : rgba(45, 45, 45, 255) ; font-family : Lato ; font-style : italic ;  font-size : "+str(self.titre_text_size)+"px }")
-
-        self.button_layout.addWidget(self.label,1)
+        self.button_layout.addStretch(0)
 
         self.button_layout.setSpacing(0)
         self.button_layout.setGeometry(QRect(0,0, self.dimensions.width(), self.square_size))
-        
 
 ################################################################################################################################################################################################################
         #LAYOUT DE PARTITIONS#
@@ -225,18 +233,18 @@ class MainWindow(QMainWindow):
     def open_file(self, pressed):
 
         try:
-            label_b = QLabel("")
-            self.partition_modifiee.setWidget(label_b)
+            #label_b = QLabel("")
+            #self.partition_modifiee.setWidget(label_b)
 
             name = QFileDialog.getOpenFileName(self, 'Open File', 'C\\', 'Text files (*.txt)')
             path = name[0]
             self.partition = class_set.TxtPartition(path)
             
             label_a = QLabel()
-            #label_b = QLabel()
+            label_b = QLabel()
 
             self.partition_originale.setWidget(label_a)
-            #self.partition_modifiee.setWidget(label_b)
+            self.partition_modifiee.setWidget(label_b)
 
             with open(path, "r", encoding="utf-8") as f:
 
@@ -249,12 +257,17 @@ class MainWindow(QMainWindow):
                 partition_originale_text.setText(text)
                 partition_originale_text.setStyleSheet("QLabel { color : rgba(75, 75, 75, 255) ;  background-color : rgba(0, 0, 0, 0) ; font-family : Lato ;  font-size : "+str(self.text_size)+"px }")
 
+                partition_modifiee_text = QLabel()
+                partition_modifiee_text.setText(text)
+                partition_modifiee_text.setStyleSheet("QLabel { color : rgba(75, 75, 75, 255) ;  background-color : rgba(0, 0, 0, 0) ; font-family : Lato ;  font-size : "+str(self.text_size)+"px }")
 
 
 
                 self.partition_originale.setWidget(partition_originale_text)
+                self.partition_modifiee.setWidget(partition_modifiee_text)
 
-                self.unfade(self.partition_originale.findChild(QLabel))
+                #self.unfade(self.partition_originale.findChild(QLabel))
+                self.dual_unfade(self.partition_originale.findChild(QLabel), self.partition_modifiee.findChild(QLabel))
 
                 self.set_titre(self.partition.titre)
 
@@ -282,14 +295,14 @@ class MainWindow(QMainWindow):
                 pass
 
 
-    def switch_type(self, pressed):
+    def switch_type(self):
         try:
             if self.partition:
                 source = self.sender()
-                if(self.diese):
+                """if(self.diese):
                     source.setIcon(self.bemol_icon)
                 else:
-                    source.setIcon(self.diese_icon)
+                    source.setIcon(self.diese_icon)"""
 
                 self.partition.switch_type()
                 partition_new = QLabel()
@@ -300,7 +313,7 @@ class MainWindow(QMainWindow):
                 partition_new.setStyleSheet("QLabel { color : rgba(75, 75, 75, 255) ;  background-color : rgba(0, 0, 0, 0) ; font-family : Lato ;  font-size : "+str(self.text_size)+"px }")
                 
                 self.partition_modifiee.setWidget(partition_new)
-                #self.unfade(self.partition_modifiee.findChild(QLabel))
+                self.unfade(self.partition_modifiee.findChild(QLabel))
 
                 self.diese = not self.diese
 
@@ -311,6 +324,9 @@ class MainWindow(QMainWindow):
     def up_switch_note(self, pressed):
         try:
             if self.partition:
+                if not self.diese:
+                    self.switch_type()
+
                 self.partition.switch_notes(1)
                 partition_new = QLabel()
                 text = ""
@@ -321,13 +337,16 @@ class MainWindow(QMainWindow):
             
                 self.partition_modifiee.setWidget(partition_new)
 
-                #self.unfade(self.partition_modifiee.findChild(QLabel))
+                self.unfade(self.partition_modifiee.findChild(QLabel))
         except AttributeError:
             pass
 
     def down_switch_note(self, pressed):
         try:
             if self.partition:
+                if self.diese:
+                    self.switch_type()
+
                 self.partition.switch_notes(-1)
                 partition_new = QLabel()
                 text = ""
@@ -339,7 +358,7 @@ class MainWindow(QMainWindow):
                 
                 self.partition_modifiee.setWidget(partition_new)
 
-                #self.unfade(self.partition_modifiee.findChild(QLabel))
+                self.unfade(self.partition_modifiee.findChild(QLabel))
 
         except AttributeError:
             pass
@@ -356,7 +375,7 @@ class MainWindow(QMainWindow):
                 new_titre = new_titre + "..."
                 break
 
-        self.label.setText(new_titre)
+        self.titre.setText(new_titre)
     
     def fade(self, widget):
         self.effect = QGraphicsOpacityEffect()
@@ -377,6 +396,29 @@ class MainWindow(QMainWindow):
         self.animation.setStartValue(0)
         self.animation.setEndValue(1)
         self.animation.start()
+
+    def dual_fade(self, widget_a, widget_b):
+        self.effect = QGraphicsOpacityEffect()
+        widget_a.setGraphicsEffect(self.effect)
+        widget_b.setGraphicsEffect(self.effect)
+
+        self.animation = QtCore.QPropertyAnimation(self.effect, b"opacity")
+        self.animation.setDuration(500)
+        self.animation.setStartValue(1)
+        self.animation.setEndValue(0)
+        self.animation.start()
+
+    def dual_unfade(self, widget_a, widget_b):
+        self.effect = QGraphicsOpacityEffect()
+        widget_a.setGraphicsEffect(self.effect)
+        widget_b.setGraphicsEffect(self.effect)
+
+        self.animation = QtCore.QPropertyAnimation(self.effect, b"opacity")
+        self.animation.setDuration(500)
+        self.animation.setStartValue(0)
+        self.animation.setEndValue(1)
+        self.animation.start()
+
 
 # create pyqt5 app 
 App = QApplication(sys.argv) 

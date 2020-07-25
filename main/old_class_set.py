@@ -286,21 +286,17 @@ class TxtPartition:
             print("NOTES : " + str(new_notes))
 
             for j in range(len(old_text) - 1):
-                if cpt != len(new_notes):
-                    if (old_text[j] != " " and old_text[j] != "/" and (old_text[j] == self.notes[i].notes[cpt].note or (old_text[j] + old_text[j+1]) == self.notes[i].notes[cpt].note)):
+                if (old_text[j] != " " and old_text[j] != "/" and (old_text[j] == self.notes[i].notes[cpt].note or (old_text[j] + old_text[j+1]) == self.notes[i].notes[cpt].note)):
 
-                        print("NEW NOTE")
-                        new_text += new_notes[cpt]
-                        cpt += 1
+                    print("NEW NOTE")
+                    new_text += new_notes[cpt]
+                    cpt += 1
 
-                        #if cpt == len(new_notes):
-                        #   new_text += " "
-                        #  break
-                    else:
-                        if(old_text[j] != "b" and old_text[j] != "#"):
-                            new_text += old_text[j]
+                    if cpt == len(new_notes):
+                        new_text += " "
+                        break
                 else:
-                    if old_text[j] != "b" and old_text[j] != "#":
+                    if(old_text[j] != "b" and old_text[j] != "#"):
                         new_text += old_text[j]
 
             print("OLD TEXT : " + old_text)
@@ -335,17 +331,13 @@ class TxtPartition:
 
 
             for j in range(len(old_text) - 1):
-                if cpt != len(new_notes):
-                    if old_text[j] != " " and old_text[j] != "/" and (old_text[j] == self.notes[i].notes[cpt].note or (old_text[j] + old_text[j+1]) == self.notes[i].notes[cpt].note):
-                        print("NEW NOTE")
-                        new_text += new_notes[cpt]
-                        cpt += 1
-                        #if cpt == len(new_notes):
-                        #   new_text += " "
-                        #   break
-                    else:
-                        if old_text[j] != "b" and old_text[j] != "#":
-                            new_text += old_text[j]
+                if old_text[j] != " " and old_text[j] != "/" and (old_text[j] == self.notes[i].notes[cpt].note or (old_text[j] + old_text[j+1]) == self.notes[i].notes[cpt].note):
+                    print("NEW NOTE")
+                    new_text += new_notes[cpt]
+                    cpt += 1
+                    if cpt == len(new_notes):
+                        new_text += " "
+                        break
                 else:
                     if old_text[j] != "b" and old_text[j] != "#":
                         new_text += old_text[j]
