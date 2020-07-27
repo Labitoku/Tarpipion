@@ -9,11 +9,9 @@ from PyQt5.QtCore import *
 import sys 
 #import smtplib
 #from email.mime.text import MIMEText
-import smtplib 
-from email.mime.multipart import MIMEMultipart 
-from email.mime.text import MIMEText 
-from email.mime.base import MIMEBase 
-from email import encoders 
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 
 class IconButton():
@@ -252,7 +250,6 @@ class MainWindow(QMainWindow):
 
             name = QFileDialog.getOpenFileName(self, 'Open File', 'C\\', 'Text files (*.txt)')
             path = name[0]
-            self.partition_path = path
             self.partition = class_set.TxtPartition(path)
             
             label_a = QLabel()
@@ -435,81 +432,15 @@ class MainWindow(QMainWindow):
         self.animation.start()
 
     def send_partition_mail(self):
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
 
-        try:
-            server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        from_address = "tarpipion.assistobot@gmail.com"
+        from_address_pwd = "bZJvJcuRR3NiHYv"
+        to_address = "louis.euvrardarnaud@gmail.com"
 
-            from_address = "tarpipion.assistobot@gmail.com"
-            from_address_pwd = "bZJvJcuRR3NiHYv"
-            to_address = "louis.euvrardarnaud@gmail.com"
-
-
-            # instance of MIMEMultipart 
-            msg = MIMEMultipart() 
-            
-            # storing the senders email address   
-            msg['From'] = from_address 
-            
-            # storing the receivers email address  
-            msg['To'] = to_address
-            
-            # storing the subject  
-            msg['Subject'] = "Nouvelle erreur de partition ! (" + self.partition.titre + ")"
-            
-            # string to store the body of the mail 
-            body = "T'as du taf'"
-            
-            # attach the body with the msg instance 
-            msg.attach(MIMEText(body, 'plain')) 
-            
-            # open the file to be sent  
-            filename = "wrg_prtn("+self.partition.titre+").txt"
-            attachment = open(self.partition_path, "rb") 
-            
-            # instance of MIMEBase and named as p 
-            p = MIMEBase('application', 'octet-stream') 
-            
-            # To change the payload into encoded form 
-            p.set_payload((attachment).read()) 
-            
-            # encode into base64 
-            encoders.encode_base64(p) 
-            
-            p.add_header('Content-Disposition', "attachment; filename= %s" % filename) 
-            
-            # attach the instance 'p' to instance 'msg' 
-            msg.attach(p) 
-            
-            # creates SMTP session 
-            s = smtplib.SMTP('smtp.gmail.com', 587) 
-            
-            # start TLS for security 
-            s.starttls() 
-            
-            # Authentication 
-            s.login(from_address, from_address_pwd) 
-            
-            # Converts the Multipart msg into a string 
-            text = msg.as_string() 
-            
-            # sending the mail 
-            s.sendmail(from_address, to_address, text) 
-            
-            # terminating the session 
-            s.quit() 
-        except AttributeError:
-            pass
-
-        """server.login(from_address, from_address_pwd)
-        
-        text = "T'as du taf'"
-
-        for i, txt in enumerate(self.partition.all_text):
-            text += txt
-
-        server.sendmail(from_address, to_address, text)
-        
-        server.quit()"""
+        server.login(from_address, from_address_pwd)
+        server.sendmail(from_address, to_address, "T'as du taf'")
+        server.quit()
 
 
 
